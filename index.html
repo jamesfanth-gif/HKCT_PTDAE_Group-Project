@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="小食地圖 SnackMap — 香港街頭小食評分 App">
+  <title>小食地圖 SnackMap</title>
+
+  <!-- ============ Ionic CDN（Lesson 1 學過的引入方式） ============ -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core@9.0.5/css/ionic.bundle.css">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core@9.0.5/dist/ionic/ionic.esm.js"></script>
+  <!-- ionicons：Ionic 9 已把圖示獨立成一個套件，要另外引入 -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@8.0.13/dist/ionicons/ionicons.esm.js"></script>
+
+  <style>
+    /* ============================================================
+       【Lesson 1】CSS 基礎：選擇器 { 屬性: 值; }
+       ============================================================ */
+
+    /* ---------- 1. 全域配色（自訂品牌色） ---------- */
+    :root {
+      --brand-1: #ff922b;   /* 品牌主色：暖橙 */
+      --brand-2: #f76707;   /* 品牌副色：深橙 */
+      --brand-grad: linear-gradient(135deg, #ff922b 0%, #f76707 100%);
+
+      --ion-color-primary: #f76707;
+      --ion-color-primary-rgb: 247, 103, 7;
+      --ion-color-primary-contrast: #ffffff;
+      --ion-color-primary-contrast-rgb: 255, 255, 255;
+      --ion-color-primary-shade: #d95b06;
+      --ion-color-primary-tint: #f87d27;
+
+      /* 淺色模式用嘅輔助變數（深色模式會喺下面覆蓋） */
+      --card-border: rgba(0, 0, 0, .09);
+      --soft-bg: #f5f6f8;
+      --divider: rgba(0, 0, 0, .07);
+      --filter-bg: #ffffff;
+      --card-bg: #ffffff;
+      --text-main: #1a1c22;
+      --text-dim: #7d8598;
+    }
+
+    /* ---------- 2. 深色模式（Lesson 2 學過的主題切換） ---------- */
+    /* 用 CSS 變數（CSS Variables）定義，令深色模式只需切換一個 class */
+    .dark-theme {
+      --ion-background-color: #0f1117;
+      --ion-background-color-rgb: 15, 17, 23;
+      --ion-text-color: #eef1f6;
+      --ion-text-color-rgb: 238, 241, 246;
+
+      --ion-item-background: #171a23;
+      --ion-card-background: #171a23;
+      --ion-toolbar-background: #14171f;
+      --ion-tab-bar-background: #14171f;
+      --ion-border-color: #2a2f3c;
+      --ion-color-step-50: #1b1f29;
+      --ion-color-step-100: #222735;
+      --ion-color-step-150: #2a3040;
+      --ion-color-step-250: #3a4254;
+      --ion-color-step-750: #b9c0cf;
+      --ion-color-step-800: #ccd2dd;
+
+      --card-border: #2a2f3c;
+      --soft-bg: #1c202b;
+      --divider: #262b38;
+      --filter-bg: #0f1117;
+      --card-bg: #171a23;
+      --text-main: #eef1f6;
+      --text-dim: #8b93a5;
+      color-scheme: dark;
+    }
+
+    /* ---------- 3. 頂部漸層工具列 ---------- */
+    .brand-toolbar {
+      --ion-toolbar-background: var(--brand-grad);
+      --background: var(--brand-grad);
+      --color: #ffffff;
+      background: var(--brand-grad);
+      box-shadow: none;
+    }
+    .brand-toolbar ion-toolbar {
+      --background: var(--brand-grad);
+      --color: #ffffff;
+      background: var(--brand-grad);
+    }
+    .brand-toolbar ion-title { font-weight: 700; letter-spacing: .5px; }
+    .brand-toolbar ion-icon { color: #fff; }
+
+    /* ---------- 4. 統計頁的統計卡 ---------- */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin: 16px 0 4px;
+    }
+    .stat-box {
+      background: var(--soft-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px 14px;
+      text-align: center;
+    }
+    .stat-box .num {
+      display: block;
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--ion-color-primary);
+    }
+    .dark-theme .stat-box .num { color: #ffa94d; }
+    .stat-box .lbl {
+      display: block;
+      font-size: 12px;
+      opacity: .7;
+      margin-top: 6px;
+    }
+
+    /* ---------- 5. 小食卡片 ---------- */
+    .stall-card {
+      margin: 0 16px 12px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      box-shadow: 0 4px 14px rgba(0,0,0,.07);
+      overflow: hidden;
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .dark-theme .stall-card { box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+    .stall-card:active { transform: scale(.985); }
+
+    .stall-body { padding: 14px 16px 6px; }
+    .stall-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .stall-name { margin: 0; font-size: 17px; font-weight: 700; }
+    .stall-meta {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12.5px; opacity: .72; margin-top: 5px;
+      flex-wrap: wrap;
+    }
+    .stall-note {
+      margin: 9px 0 0; font-size: 13.5px; line-height: 1.5; opacity: .82;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+    .cat-chip {
+      font-size: 11px; font-weight: 700;
+      padding: 3px 9px; border-radius: 999px;
+      color: #fff; white-space: nowrap;
+    }
+    .tag-chip {
+      font-size: 11px; font-weight: 600;
+      padding: 3px 9px; border-radius: 999px;
+      background: var(--ion-color-step-100);
+      border: 1px solid var(--card-border);
+      opacity: .9; white-space: nowrap;
+    }
+
+    /* 星星評分 */
+    .stars { display: inline-flex; align-items: center; gap: 1px; color: #f59f00; font-size: 15px; }
+    .stars .score { margin-left: 6px; font-size: 12px; font-weight: 700; opacity: .85; }
+
+    /* 卡片底部操作列 */
+    .stall-actions {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 10px 8px 14px;
+      border-top: 1px solid var(--divider);
+      margin-top: 10px;
+    }
+    .act-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 13px; font-weight: 600;
+      padding: 7px 10px; border-radius: 10px;
+      background: transparent; border: none; color: inherit;
+      cursor: pointer;
+    }
+    .act-btn:active { background: var(--ion-color-step-100); }
+    .act-btn.fav-on { color: #e64980; }
+    .act-btn.del { color: #e03131; }
+
+    /* 隨機推介的特色卡 */
+    .pick-card {
+      margin: 12px 16px;
+      border-radius: 16px;
+      background: var(--brand-grad);
+      color: #fff;
+      padding: 15px 16px;
+      box-shadow: 0 6px 18px rgba(247,103,7,.28);
+    }
+    .pick-label { font-size: 11.5px; font-weight: 700; letter-spacing: 1.2px; opacity: .9; }
+    .pick-name { font-size: 20px; font-weight: 800; margin: 4px 0 2px; }
+    .pick-sub { font-size: 12.5px; opacity: .92; }
+
+    /* ---------- 6. 篩選列（Lesson 2 條件渲染 + Lesson 3 陣列渲染） ---------- */
+    .filter-bar {
+      position: sticky; top: 0; z-index: 5;
+      background: var(--filter-bg);
+      padding: 10px 16px 12px;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    /* 篩選列係 sticky，會蓋住下面嘅內容。
+       加上 scroll-margin-top，令程式自動捲動（scrollIntoView）時
+       目標唔會刚好卡喺篩選列底下。 */
+    .pick-card, .api-card, .stall-card, .empty-state, .result-line {
+      scroll-margin-top: 120px;
+    }
+
+    .chip-row { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+    .chip-row::-webkit-scrollbar { display: none; }
+    .f-chip {
+      flex: 0 0 auto;
+      font-size: 12.5px; font-weight: 600;
+      padding: 7px 13px; border-radius: 999px;
+      background: var(--ion-color-step-100);
+      border: 1px solid var(--card-border);
+      color: inherit; cursor: pointer;
+      transition: background .15s ease, color .15s ease;
+    }
+    .f-chip.active { background: var(--ion-color-primary); border-color: var(--ion-color-primary); color: #fff; }
+
+    .result-line { font-size: 12.5px; opacity: .65; padding: 10px 16px 2px; }
+
+    /* ---------- 7. 空狀態（Lesson 7 明確要求） ---------- */
+    .empty-state { text-align: center; padding: 46px 30px; }
+    .empty-state ion-icon { font-size: 62px; opacity: .28; }
+    .empty-state h3 { margin: 12px 0 6px; font-size: 17px; font-weight: 700; }
+    .empty-state p { margin: 0; font-size: 13.5px; opacity: .65; line-height: 1.6; }
+
+    /* ---------- 8. 統計長條圖 ---------- */
+    .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; }
+    .bar-label { flex: 0 0 62px; font-size: 12.5px; font-weight: 600; }
+    .bar-track { flex: 1; height: 9px; border-radius: 999px; background: var(--ion-color-step-100); overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 999px; transition: width .5s cubic-bezier(.2,.8,.2,1); }
+    .bar-num { flex: 0 0 30px; text-align: right; font-size: 12px; font-weight: 700; opacity: .75; }
+
+    /* ---------- 9. 區塊標題 ---------- */
+    .sec-title {
+      font-size: 13px; font-weight: 800; letter-spacing: .6px;
+      opacity: .55; margin: 22px 16px 10px; text-transform: uppercase;
+    }
+
+    /* ---------- 10. 表單（Lesson 4 + Lesson 6） ---------- */
+    .form-group { padding: 0 4px; }
+    .form-label { font-size: 12.5px; font-weight: 700; margin: 16px 16px 7px; opacity: .8; }
+    .form-hint { font-size: 11.5px; opacity: .55; margin: -2px 16px 8px; }
+    .err-text { color: #e03131; font-size: 12px; margin: 6px 16px 0; min-height: 15px; font-weight: 600; }
+    .dark-theme .err-text { color: #ff8787; }
+
+    /* 星星選擇器 */
+    .star-picker { display: flex; gap: 8px; padding: 6px 16px; }
+    .star-picker ion-icon { font-size: 34px; color: #ced4da; cursor: pointer; transition: transform .12s ease, color .12s ease; }
+    .star-picker ion-icon.on { color: #f59f00; }
+    .star-picker ion-icon:active { transform: scale(.86); }
+
+    /* ---------- 11. 今日靈感（公開 API 加分項） ---------- */
+    .api-card {
+      margin: 12px 16px;
+      border-radius: 16px;
+      border: 1px dashed var(--card-border);
+      background: var(--soft-bg);
+      padding: 14px 16px;
+    }
+    .api-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .api-title { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+    .api-title ion-icon { color: var(--ion-color-primary); }
+    .api-body { margin-top: 10px; font-size: 13px; }
+    .api-meal { display: flex; gap: 12px; align-items: center; }
+    .api-meal img { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; flex: 0 0 auto; }
+    .api-meal .nm { font-weight: 700; font-size: 14px; }
+    .api-meal .ds { font-size: 12px; opacity: .68; margin-top: 3px; }
+    .api-error { color: #e03131; font-size: 12.5px; line-height: 1.6; }
+    .dark-theme .api-error { color: #ff8787; }
+    .api-src { font-size: 10.5px; opacity: .45; margin-top: 10px; text-align: right; }
+
+    /* ---------- 12. 設定頁 ---------- */
+    .setting-card { margin: 0 16px 12px; border-radius: 16px; border: 1px solid var(--card-border); overflow: hidden; }
+    .about-box { margin: 4px 16px; padding: 18px; border-radius: 16px; background: var(--brand-grad); color: #fff; }
+    .about-box h2 { margin: 0 0 4px; font-size: 19px; font-weight: 800; }
+    .about-box p { margin: 0; font-size: 12.5px; opacity: .93; line-height: 1.6; }
+
+    /* ---------- 13. 骨架/雜項 ---------- */
+    ion-searchbar { --box-shadow: none; --background: var(--ion-color-step-100); padding: 2px 8px; }
+    /* ⚠️ Ionic 嘅搜尋框預設文字顏色唔會跟深色模式變，
+       喺黑色背景會變成「深色字配深色底」幾乎睇唔到，所以要自己設定。 */
+    ion-searchbar input { color: var(--text-main) !important; }
+    ion-searchbar input::placeholder { color: var(--text-dim) !important; opacity: 1 !important; }
+    ion-searchbar ion-icon, ion-searchbar .searchbar-icon { color: var(--text-dim) !important; }
+    ion-modal { --border-radius: 20px; }
+    .divider { height: 1px; background: var(--divider); margin: 0 16px; }
+    .row-between { display: flex; align-items: center; justify-content: space-between; }
+    .tap-scale { transition: transform .15s ease; }
+    .tap-scale:active { transform: scale(.95); }
+  </style>
+</head>
+
+<body>
+
+<!-- ==============================================================
+     載入畫面 Splash
+     故意用「行內 CSS」寫，唔靠上面個 CSS 檔，所以 CDN 慢嘅時候
+     都即刻見到，唔會出現白屏。App 初始化完就會自動移除。
+     ============================================================== -->
+<div id="splash" style="position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;
+     align-items:center;justify-content:center;gap:14px;
+     background:linear-gradient(135deg,#ff922b 0%,#f76707 100%);color:#fff;
+     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
+     transition:opacity .35s ease;">
+  <div style="font-size:46px;line-height:1">🍜</div>
+  <div style="font-size:21px;font-weight:800;letter-spacing:1px">小食地圖</div>
+  <div style="font-size:12.5px;opacity:.9">SnackMap · 載入中…</div>
+  <div style="width:26px;height:26px;border:3px solid rgba(255,255,255,.35);
+       border-top-color:#fff;border-radius:50%;animation:splashspin .8s linear infinite;"></div>
+  <style>@keyframes splashspin{to{transform:rotate(360deg)}}</style>
+</div>
+
+<ion-app>
+
+  <!-- ==============================================================
+       【Lesson 5】ion-tabs：底部導航，做 4 個可切換頁面
+       （要求：至少 2 個可切換頁面 → 我們做 4 個，超額完成）
+       ============================================================== -->
+  <ion-tabs>
+
+    <!-- ============ 頁面 1：探索 ============ -->
+    <ion-tab tab="explore">
+      <ion-header class="brand-toolbar">
+        <ion-toolbar>
+          <ion-title>小食地圖</ion-title>
+          <ion-buttons slot="end">
+            <ion-button id="btn-random" title="今日食乜好？">
+              <ion-icon slot="icon-only" name="shuffle"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content>
+        <!-- 搜尋 + 篩選 + 排序 -->
+        <div class="filter-bar">
+          <ion-searchbar id="searchbar" placeholder="搜尋小食名稱、分區或標籤" debounce="250"></ion-searchbar>
+          <div class="chip-row" id="cat-chips" style="margin-top:8px"></div>
+          <div class="chip-row" id="sort-chips" style="margin-top:7px"></div>
+        </div>
+
+        <!-- 隨機推介（特色卡） -->
+        <div id="pick-slot"></div>
+
+        <!-- 今日靈感：公開 API 加分項 -->
+        <div class="api-card">
+          <div class="api-head">
+            <div class="api-title"><ion-icon name="sparkles"></ion-icon> 今日食譜靈感</div>
+            <ion-button size="small" fill="outline" id="btn-api"><ion-icon slot="start" name="refresh"></ion-icon>抽一餐</ion-icon-button>
+          </div>
+          <div class="api-body" id="api-body">
+            <div style="opacity:.6;font-size:12.5px;line-height:1.6">接入公開 API TheMealDB，抽一個外國菜式睇下有咩新靈感。撳「抽一餐」試下。</div>
+          </div>
+          <div class="api-src">資料來源：TheMealDB (themealdb.com)</div>
+        </div>
+
+        <div class="result-line" id="result-line"></div>
+        <div id="explore-list"></div>
+
+        <!-- Lesson 4：右下角 FAB 開啟新增視窗
+             ⚠️ ion-fab 必須直接放在 ion-content 裡面，並加 slot="fixed" -->
+        <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+          <ion-fab-button id="btn-add"><ion-icon name="add"></ion-icon></ion-fab-button>
+        </ion-fab>
+      </ion-content>
+    </ion-tab>
+
+    <!-- ============ 頁面 2：我的收藏 ============ -->
+    <ion-tab tab="fav">
+      <ion-header class="brand-toolbar">
+        <ion-toolbar><ion-title>我的收藏</ion-title></ion-toolbar>
+      </ion-header>
+      <ion-content>
+        <div class="result-line" id="fav-line"></div>
+        <div id="fav-list"></div>
+      </ion-content>
+    </ion-tab>
+
+    <!-- ============ 頁面 3：統計 ============ -->
+    <ion-tab tab="stats">
+      <ion-header class="brand-toolbar">
+        <ion-toolbar><ion-title>數據統計</ion-title></ion-toolbar>
+      </ion-header>
+      <ion-content>
+        <div id="stats-body"></div>
+      </ion-content>
+    </ion-tab>
+
+    <!-- ============ 頁面 4：設定 ============ -->
+    <ion-tab tab="settings">
+      <ion-header class="brand-toolbar">
+        <ion-toolbar><ion-title>設定</ion-title></ion-toolbar>
+      </ion-header>
+      <ion-content>
+        <div class="about-box">
+          <h2>🍜 小食地圖 SnackMap</h2>
+          <p>幫你記低每一次街頭小食的美味，唔使再「食完就唔記得」。<br>版本 1.0 · 離線可用</p>
+        </div>
+
+        <div class="sec-title">外觀</div>
+        <div class="setting-card">
+          <ion-list lines="none">
+            <ion-item>
+              <ion-icon slot="start" name="moon" class="tap-scale"></ion-icon>
+              <ion-label>深色模式</ion-label>
+              <ion-toggle id="toggle-dark" slot="end"></ion-toggle>
+            </ion-item>
+          </ion-list>
+        </div>
+
+        <div class="sec-title">資料管理</div>
+        <div class="setting-card">
+          <ion-list lines="none">
+            <ion-item button id="btn-export">
+              <ion-icon slot="start" name="download"></ion-icon>
+              <ion-label>匯出資料 (JSON)</ion-label>
+            </ion-item>
+            <ion-item button id="btn-restore">
+              <ion-icon slot="start" name="refresh"></ion-icon>
+              <ion-label>載入示範資料</ion-label>
+            </ion-item>
+            <ion-item button id="btn-clear">
+              <ion-icon slot="start" name="trash" color="danger"></ion-icon>
+              <ion-label color="danger">清空所有資料</ion-label>
+            </ion-item>
+          </ion-list>
+        </div>
+
+        <div class="sec-title">技術</div>
+        <div class="setting-card">
+          <ion-list lines="none">
+            <ion-item><ion-label class="ion-text-wrap">
+              <p style="font-size:12.5px;line-height:1.7;margin:6px 0">
+                Ionic 9 (CDN) · 原生 JavaScript · Web Component<br>
+                資料儲存：localStorage + JSON.stringify / parse<br>
+                資料模型：JavaScript Class (FoodStall / StallStore)
+              </p>
+            </ion-label></ion-item>
+          </ion-list>
+        </div>
+        <div style="height:28px"></div>
+      </ion-content>
+    </ion-tab>
+
+    <!-- ============ 底部導航列 ============ -->
+    <ion-tab-bar slot="bottom" color="light">
+      <ion-tab-button tab="explore">
+        <ion-icon name="restaurant"></ion-icon>
+        <ion-label>探索</ion-label>
+      </ion-tab-button>
+      <ion-tab-button tab="fav">
+        <ion-icon name="heart"></ion-icon>
+        <ion-label>收藏</ion-label>
+      </ion-tab-button>
+      <ion-tab-button tab="stats">
+        <ion-icon name="speedometer"></ion-icon>
+        <ion-label>統計</ion-label>
+      </ion-tab-button>
+      <ion-tab-button tab="settings">
+        <ion-icon name="settings"></ion-icon>
+        <ion-label>設定</ion-label>
+      </ion-tab-button>
+    </ion-tab-bar>
+  </ion-tabs>
+
+  <!-- ==============================================================
+       【Lesson 4】ion-modal：新增 / 編輯小食的輸入表單
+       ============================================================== -->
+  <ion-modal id="form-modal" class="form-modal">
+    <ion-header>
+      <ion-toolbar color="light">
+        <ion-buttons slot="start">
+          <ion-button id="btn-close"><ion-icon slot="icon-only" name="close"></ion-icon></ion-button>
+        </ion-buttons>
+        <ion-title id="modal-title">新增小食</ion-title>
+        <ion-buttons slot="end">
+          <ion-button id="btn-save"><strong>儲存</strong></ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content>
+      <div class="form-group">
+        <!-- 必填：名稱（Lesson 6 空白 + 長度驗證） -->
+        <div class="form-label">小食名稱 <span style="color:#e03131">*</span></div>
+        <ion-list lines="none">
+          <ion-item>
+            <ion-input id="f-name" placeholder="例：咖喱魚蛋" maxlength="30" debounce="0"></ion-input>
+          </ion-item>
+        </ion-list>
+        <div class="err-text" id="e-name"></div>
+
+        <!-- 類別：chips 單選（比 ion-select 快 2 個步驟，Demo 更順） -->
+        <div class="form-label">類別 <span style="color:#e03131">*</span></div>
+        <div class="chip-row" id="f-cats" style="padding:0 16px 4px"></div>
+        <div class="err-text" id="e-cat"></div>
+
+        <!-- 分區 -->
+        <div class="form-label">分區 <span style="color:#e03131">*</span></div>
+        <div class="chip-row" id="f-dists" style="padding:0 16px 4px"></div>
+        <div class="err-text" id="e-dist"></div>
+
+        <!-- 價錢 -->
+        <div class="form-label">價錢級別</div>
+        <div class="chip-row" id="f-prices" style="padding:0 16px 4px"></div>
+
+        <!-- 評分：自製星星選擇器（不用 ion-select / ion-rating，減少依賴） -->
+        <div class="form-label">我的評分 <span style="color:#e03131">*</span></div>
+        <div class="star-picker" id="f-stars"></div>
+        <div class="form-hint" id="e-rating" style="margin:2px 16px 0"></div>
+
+        <!-- 標籤 -->
+        <div class="form-label">標籤</div>
+        <ion-list lines="none">
+          <ion-item>
+            <ion-input id="f-tags" placeholder="用英文逗號分隔，例：必食,排隊,外賣"></ion-input>
+          </ion-item>
+        </ion-list>
+        <div class="form-hint" style="margin:6px 16px 0">多個標籤用「,」分隔，最多 5 個</div>
+
+        <!-- 備註：長度驗證 -->
+        <div class="form-label">食後感</div>
+        <ion-list lines="none">
+          <ion-item>
+            <ion-textarea id="f-note" placeholder="推介佢啲咩？要注意啲咩？" rows="3" maxlength="120" auto-grow></ion-textarea>
+          </ion-item>
+        </ion-list>
+        <div class="err-text" id="e-note"></div>
+
+        <!-- 日期：ion-datetime -->
+        <div class="form-label">到訪日期</div>
+        <div style="padding:0 16px">
+          <ion-datetime id="f-date" presentation="date" display-format="YYYY-MM-DD" locale="zh-HK" value="2026-09-27"></ion-datetime>
+        </div>
+        <div class="err-text" id="e-date"></div>
+
+        <div style="height:30px"></div>
+      </div>
+    </ion-content>
+  </ion-modal>
+
+</ion-app>
+
+<script>
+/* ============================================================================
+   小食地圖 SnackMap — 程式碼分 6 大區塊，註解對應課堂學過的技巧
+
+   ⚠️ 呢段刻意用「普通 script」而唔係 type="module"：
+      module 嘅執行順序係跟住文件順序排，會等同上面兩個 CDN 檔案
+      載入完先執行。萬一現場網絡慢，成個 App 會白屏幾秒。
+      用普通 script 就可以喺 HTML 一解析完即刻開始畫面，唔靠 CDN 速度。
+      （程式碼內冇用到 import / export，所以完全冇影響。）
+   ============================================================================ */
+
+/* ---------------------------------------------------------------------------
+   【區塊 1】常數設定
+   --------------------------------------------------------------------------- */
+
+// localStorage 的 key（Lesson 6）
+const STORAGE_KEY = 'snackmap_v1';
+const DARK_KEY     = 'snackmap_dark';
+
+// 6 個類別 + 對應顏色／圖示（用嚟做卡片標籤同統計長條圖）
+const CATEGORIES = [
+  { id: 'street',  name: '街頭小食', color: '#f76707', icon: 'flame' },
+  { id: 'dessert', name: '糖水甜品', color: '#e64980', icon: 'ice-cream' },
+  { id: 'cafe',    name: '茶餐廳',   color: '#7048e8', icon: 'cafe' },
+  { id: 'seafood', name: '海鮮小菜', color: '#0ca678', icon: 'fish' },
+  { id: 'fried',   name: '炸物',     color: '#e03131', icon: 'restaurant' },
+  { id: 'cake',    name: '特色糕點', color: '#1c7ed6', icon: 'pizza' }
+];
+
+const DISTRICTS = ['中環', '灣仔', '銅鑼灣', '旺角', '深水埗', '尖沙咀', '觀塘', '沙田'];
+
+// 價錢級別：1 最平、4 最貴
+const PRICES = {
+  1: { label: '$',  desc: '平民價' },
+  2: { label: '$$', desc: '中等' },
+  3: { label: '$$$', desc: '較貴' },
+  4: { label: '$$$$', desc: '高級' }
+};
+
+const SORT_OPTIONS = [
+  { id: 'rating', name: '評分高→低' },
+  { id: 'price',  name: '價錢低→高' },
+  { id: 'recent', name: '最近到訪' },
+  { id: 'name',   name: '名稱 A→Z' }
+];
+
+// 首次開啟時的示範資料（令 Demo 一打開就有嘢睇）
+const SEED_DATA = [
+  { name:'咖喱魚蛋',   category:'street',  district:'旺角',   price:1, rating:5, tags:['必食','街頭'],       note:'中環街市後面嗰檔，魚蛋彈牙，咖喱唔辣，街坊至愛。', date:'2026-09-20' },
+  { name:'雞蛋仔',     category:'cake',    district:'銅鑼灣', price:1, rating:4, tags:['外賣','甜'],         note:'渣甸街口檔口，剛出爐最脆，唔好放太耐會返潮。',   date:'2026-09-14' },
+  { name:'港式奶茶',   category:'cafe',    district:'中環',   price:2, rating:5, tags:['必食','冰室'],       note:'絲襪奶茶，濃淡剛好，配菠蘿包係絕配。',           date:'2026-09-25' },
+  { name:'芒果班戟',   category:'dessert', district:'尖沙咀', price:3, rating:4, tags:['甜品','排隊'],       note:'班戟皮薄身軟，芒果份量十足，唔會太甜。',           date:'2026-09-18' },
+  { name:'生炒糯米飯', category:'cafe',    district:'觀塘',   price:2, rating:3, tags:['碟頭飯','宵夜'],     note:'粒粒分明，豉油香，不過飯量偏少，要加底。',       date:'2026-09-05' },
+  { name:'避風塘炒蟹', category:'seafood', district:'灣仔',   price:4, rating:5, tags:['海鮮','聚會'],       note:'膏蟹膏滿，蒜香濃，約埋三至四個人最抵。',         date:'2026-09-22' },
+  { name:'蝦餃皇',     category:'seafood', district:'深水埗', price:3, rating:4, tags:['點心','茶點'],       note:'三粒蝦一隻，蝦仁彈牙，褶子做得靚。',             date:'2026-09-11' },
+  { name:'鹹水角',     category:'fried',   district:'深水埗', price:1, rating:4, tags:['炸物','街頭'],       note:'炸到金黃，內餡豬肉洋蔥，唔油膩。',               date:'2026-09-08' },
+  { name:'砵仔糕',     category:'cake',    district:'沙田',   price:1, rating:3, tags:['糖水','小食'],       note:'鬆軟帶椰香，要趁熱食先爽。',                       date:'2026-08-30' },
+  { name:'車仔麵',     category:'street',  district:'旺角',   price:2, rating:4, tags:['街頭','宵夜'],       note:'自選餡料，豬皮爽脆，湯底夠味。',                 date:'2026-09-27' }
+];
+
+/* ---------------------------------------------------------------------------
+   【區塊 2】資料模型：JavaScript Class（Lesson 9）
+   把「資料」同「操作資料嘅方法」綁埋一齊，好過一堆獨立函式。
+   --------------------------------------------------------------------------- */
+
+// 小工具：把用戶輸入的文字轉成安全 HTML，避免輸入 < 或 & 令畫面爆版
+function escapeHTML(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+class FoodStall {
+  // constructor：每 new 一次就自動執行，負責把參數放進呢個物件
+  constructor(data) {
+    this.id        = data.id || (Date.now() + Math.random().toString(36).slice(2, 7));
+    this.name      = data.name;
+    this.category  = data.category;
+    this.district  = data.district;
+    this.price     = Number(data.price) || 1;
+    this.rating    = Number(data.rating) || 0;
+    this.tags      = Array.isArray(data.tags) ? data.tags : [];
+    this.note      = data.note || '';
+    this.date      = data.date || new Date().toISOString().slice(0, 10);
+    this.fav       = Boolean(data.fav);
+    this.createdAt = data.createdAt || Date.now();
+  }
+
+  // 方法：搵返自己嘅類別定義（用嚟攞顏色同圖示）
+  getCategoryInfo() {
+    return CATEGORIES.find(c => c.id === this.category) || CATEGORIES[0];
+  }
+
+  // 方法：產生星星 HTML
+  starsHTML() {
+    let out = '';
+    for (let i = 1; i <= 5; i++) {
+      out += `<ion-icon name="${i <= this.rating ? 'star' : 'star-outline'}"></ion-icon>`;
+    }
+    return `<span class="stars">${out}<span class="score">${this.rating}.0</span></span>`;
+  }
+
+  // 方法：切換收藏狀態（Lesson 4 教過 `!` 驚嘆號取反）
+  toggleFavorite() {
+    this.fav = !this.fav;
+    return this.fav;
+  }
+
+  // 方法：產生 Google Maps 搜尋連結（用官方 universal URL 格式，
+  // 手機會打開 Google Maps App, 電腦會打開瀏覽器嘅 Google Maps）
+  mapURL() {
+    const q = encodeURIComponent(`${this.name} ${this.district}`);
+    return `https://www.google.com/maps/search/?api=1&query=${q}`;
+  }
+
+  // 方法：產生呢張卡片的 HTML（Lesson 5 單一職責原則：拆出獨立函式/方法）
+  createCardHTML() {
+    const cat = this.getCategoryInfo();
+    const tags = this.tags.map(t => `<span class="tag-chip">#${escapeHTML(t)}</span>`).join('');
+
+    return `
+      <div class="stall-card">
+        <div class="stall-body">
+          <div class="stall-top">
+            <div style="min-width:0">
+              <h3 class="stall-name">${escapeHTML(this.name)}</h3>
+              <div class="stall-meta">
+                <span class="cat-chip" style="background:${cat.color}">${cat.name}</span>
+                <span><ion-icon name="location" style="vertical-align:-2px"></ion-icon> ${escapeHTML(this.district)}</span>
+                <span><ion-icon name="pricetag" style="vertical-align:-2px"></ion-icon> ${PRICES[this.price].label}</span>
+                <span><ion-icon name="time" style="vertical-align:-2px"></ion-icon> ${this.date}</span>
+              </div>
+            </div>
+            <div style="flex:0 0 auto;padding-top:2px">${this.starsHTML()}</div>
+          </div>
+          ${this.note ? `<p class="stall-note">${escapeHTML(this.note)}</p>` : ''}
+          ${tags ? `<div class="tag-row">${tags}</div>` : ''}
+        </div>
+        <div class="stall-actions">
+          <button class="act-btn fav-btn ${this.fav ? 'fav-on' : ''}" data-action="fav" data-id="${this.id}">
+            <ion-icon name="${this.fav ? 'heart' : 'heart-outline'}"></ion-icon>${this.fav ? '已收藏' : '收藏'}
+          </button>
+          <div style="display:flex;gap:2px">
+            <a class="act-btn" href="${this.mapURL()}" target="_blank" rel="noopener noreferrer" title="喺 Google Maps 打開">
+              <ion-icon name="navigate"></ion-icon>地圖
+            </a>
+            <button class="act-btn" data-action="edit" data-id="${this.id}">
+              <ion-icon name="create"></ion-icon>編輯
+            </button>
+            <button class="act-btn del" data-action="del" data-id="${this.id}">
+              <ion-icon name="trash"></icon></ion-icon>刪除
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // 儲存成純物件（Class 實例本身唔可以直接 JSON.stringify 嘅method）
+  toJSON() {
+    return {
+      id: this.id, name: this.name, category: this.category, district: this.district,
+      price: this.price, rating: this.rating, tags: this.tags, note: this.note,
+      date: this.date, fav: this.fav, createdAt: this.createdAt
+    };
+  }
+}
+
+// 資料庫：集中負責「記憶」同「儲存」，令 UI 層唔使直接掂 localStorage
+class StallStore {
+  constructor() {
+    this.items = [];   // 陣列裝 Class 實例（Lesson 9）
+    this.load();
+  }
+
+  // 從 localStorage 讀返上次的資料（Lesson 6）
+  load() {
+    let saved = null;
+    try {
+      const text = localStorage.getItem(STORAGE_KEY);
+      if (text) saved = JSON.parse(text);          // 文字 → 陣列
+    } catch (e) {
+      // 防止 localStorage 被改壞／舊格式令成個 App 死機
+      console.warn('讀取儲存資料失敗，已改用示範資料：', e);
+      saved = null;
+    }
+    if (Array.isArray(saved) && saved.length) {
+      this.items = saved.map(d => new FoodStall(d));  // 純物件 → Class 實例
+    } else {
+      this.items = SEED_DATA.map(d => new FoodStall(d));  // 第一次用就載入示範資料
+      this.save();
+    }
+  }
+
+  // 存回 localStorage（Lesson 6：JSON.stringify）
+  save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.items.map(i => i.toJSON())));
+    } catch (e) {
+      console.warn('儲存失敗：', e);
+    }
+  }
+
+  // 依 id 搵返對應嘅 Class 實例
+  getById(id) {
+    return this.items.find(i => i.id === id);
+  }
+
+  add(data) {
+    const stall = new FoodStall(data);
+    this.items.push(stall);
+    this.save();
+    return stall;
+  }
+
+  update(id, data) {
+    const target = this.getById(id);
+    if (!target) return null;
+    Object.assign(target, data);   // 用新資料覆蓋舊欄位，id / fav 保持不變
+    this.save();
+    return target;
+  }
+
+  remove(id) {
+    const i = this.items.findIndex(x => x.id === id);
+    if (i === -1) return false;
+    this.items.splice(i, 1);        // Lesson 3：splice 刪除
+    this.save();
+    return true;
+  }
+
+  clear() {
+    this.items = [];
+    this.save();
+  }
+
+  restoreSeed() {
+    this.items = SEED_DATA.map(d => new FoodStall(d));
+    this.save();
+  }
+
+  getFavorites() {
+    return this.items.filter(i => i.fav);
+  }
+
+  // 統計頁用：一次過計晒所有數字
+  getStats() {
+    const total = this.items.length;
+    const avg   = total ? (this.items.reduce((s, i) => s + i.rating, 0) / total) : 0;
+    const byCat = CATEGORIES.map(c => ({
+      ...c,
+      count: this.items.filter(i => i.category === c.id).length
+    }));
+    return {
+      total,
+      fav:    this.getFavorites().length,
+      avg:    avg.toFixed(1),
+      top5:   [...this.items].sort((a, b) => b.rating - a.rating).slice(0, 5),
+      byCat
+    };
+  }
+}
+
+// 建立一個全 App 共用嘅資料庫實例
+const store = new StallStore();
+
+/* ---------------------------------------------------------------------------
+   【區塊 3】畫面狀態：搜尋字串、篩選條件、排序方式
+   --------------------------------------------------------------------------- */
+const ui = {
+  keyword:   '',      // 搜尋關鍵字
+  category:  'all',   // 篩選類別
+  sort:      'rating',// 排序方式
+  pickId:    null     // 「今日推介」邊一間
+};
+
+/* ---------------------------------------------------------------------------
+   【區塊 4】渲染函式（Lesson 3：map() + join()；Lesson 5：拆成獨立函式）
+   --------------------------------------------------------------------------- */
+
+// 空狀態 HTML（Lesson 7：唔可以一片空白，要友善提示）
+function createEmptyHTML(icon, title, desc) {
+  return `
+    <div class="empty-state">
+      <ion-icon name="${icon}"></ion-icon>
+      <h3>${title}</h3>
+      <p>${desc}</p>
+    </div>`;
+}
+
+// 「今日推介」特色卡
+function renderPick() {
+  const slot = document.getElementById('pick-slot');
+  const list = getFiltered();
+  if (!list.length) { slot.innerHTML = ''; return; }
+  const pick = list.find(i => i.id === ui.pickId) || list[0];
+  slot.innerHTML = `
+    <a class="pick-card" href="${pick.mapURL()}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;display:block">
+      <div class="pick-label">🍴 今日推介 · 撳我去地圖</div>
+      <div class="pick-name">${escapeHTML(pick.name)}</div>
+      <div class="pick-sub">
+        ${pick.getCategoryInfo().name} · ${escapeHTML(pick.district)} · ${PRICES[pick.price].label} · ${pick.rating}.0 分
+      </div>
+    </a>`;
+}
+
+// 依搜尋 / 篩選 / 排序，計出要顯示嘅資料
+function getFiltered() {
+  const kw = ui.keyword.trim().toLowerCase();
+
+  let list = store.items.filter(item => {
+    // 條件 1：類別篩選
+    if (ui.category !== 'all' && item.category !== ui.category) return false;
+
+    // 條件 2：關鍵字搜尋（名稱 / 分區 / 標籤 / 備註 都會搵到）
+    if (kw) {
+      const haystack = [item.name, item.district, item.note, ...item.tags]
+        .join(' ').toLowerCase();
+      if (!haystack.includes(kw)) return false;
+    }
+    return true;
+  });
+
+  // 排序（回傳新陣列，唔會影響原本嘅 store.items）
+  switch (ui.sort) {
+    case 'rating': list = list.sort((a, b) => b.rating - a.rating);      break;
+    case 'price':  list = list.sort((a, b) => a.price - b.price);        break;
+    case 'recent': list = list.sort((a, b) => b.date.localeCompare(a.date)); break;
+    case 'name':   list = list.sort((a, b) => a.name.localeCompare(b.name));   break;
+  }
+  return list;
+}
+
+// 渲染「探索」頁
+function renderExplore() {
+  const list   = getFiltered();
+  const box    = document.getElementById('explore-list');
+  const line   = document.getElementById('result-line');
+
+  line.textContent = `共 ${list.length} 間小食` + (list.length ? `（資料庫總共 ${store.items.length} 間）` : '');
+
+  if (!list.length) {
+    box.innerHTML = createEmptyHTML(
+      'search',
+      store.items.length ? '搵唔到相符小食' : '仲未有紀錄',
+      store.items.length
+        ? '試下改個關鍵字，或者撳「全部」清除篩選條件。'
+        : '撳右下角嘅 ＋ 掣，記低你食過嘅第一間小食！'
+    );
+  } else {
+    box.innerHTML = list.map(item => item.createCardHTML()).join('');
+  }
+  renderPick();
+}
+
+// 渲染「我的收藏」頁
+function renderFavorites() {
+  const list = store.getFavorites();
+  const box  = document.getElementById('fav-list');
+  const line = document.getElementById('fav-line');
+
+  line.textContent = `共收藏 ${list.length} 間小食`;
+  box.innerHTML = list.length
+    ? list.map(item => item.createCardHTML()).join('')
+    : createEmptyHTML('heart-outline', '未收藏任何小食',
+        '喺「探索」頁撳一下 ♥ 收藏，\n鍾意嘅小食就會出現喺呢度。');
+}
+
+// 渲染「統計」頁（Lesson 3 + Lesson 7：把資料變成易明嘅圖表）
+function renderStats() {
+  const s   = store.getStats();
+  const box = document.getElementById('stats-body');
+  const max = Math.max(1, ...s.byCat.map(c => c.count));   // 長條圖比例基準
+
+  const bars = s.byCat.map(c => `
+    <div class="bar-row">
+      <div class="bar-label">${c.name}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${(c.count / max) * 100}%;background:${c.color}"></div>
+      </div>
+      <div class="bar-num">${c.count}</div>
+    </div>`).join('');
+
+  const top = s.top5.length ? s.top5.map((item, i) => `
+    <div class="bar-row" style="align-items:center">
+      <div class="bar-label">No.${i + 1}</div>
+      <div style="flex:1;font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        ${escapeHTML(item.name)}
+      </div>
+      <div class="bar-num" style="flex:0 0 34px">${item.rating}.0</div>
+    </div>`).join('') : '<p style="opacity:.6;font-size:13px;padding:0 4px">未有資料</p>';
+
+  box.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-box"><span class="num">${s.total}</span><span class="lbl">記錄小食</span></div>
+      <div class="stat-box"><span class="num">${s.avg}</span><span class="lbl">平均評分</span></div>
+      <div class="stat-box"><span class="num">${s.fav}</span><span class="lbl">已收藏</span></div>
+      <div class="stat-box"><span class="num">${CATEGORIES.filter(c => s.byCat.find(b => b.id === c.id && b.count > 0)).length}</span><span class="lbl">涉獵類別</span></div>
+    </div>
+
+    <div class="sec-title">類別分佈</div>
+    <div style="padding:0 16px">${bars}</div>
+
+    <div class="sec-title">我的 Top 5 推介</div>
+    <div style="padding:0 16px 20px">${top}</div>`;
+}
+
+// 一次過重新渲染三個頁面（Lesson 6 新增流程：改完資料一定要重繪）
+function renderAll() {
+  renderExplore();
+  renderFavorites();
+  renderStats();
+}
+
+/* ---------------------------------------------------------------------------
+   【區塊 5】互動事件
+   --------------------------------------------------------------------------- */
+
+// --- 5.1 提示訊息：ion-toast（Lesson 4 的互動元件家族） ---
+async function showToast(message, color) {
+  const toast = document.createElement('ion-toast');
+  toast.message = message;
+  toast.duration = 1600;
+  toast.position = 'bottom';
+  toast.color = color || 'dark';
+  document.body.appendChild(toast);
+  await toast.present();
+  setTimeout(() => toast.remove(), 1800);
+}
+
+// --- 5.2 確認視窗：ion-alert（Lesson 4：刪除前先問清楚） ---
+async function confirmAlert(header, message, okText) {
+  return new Promise(resolve => {
+    const alert = document.createElement('ion-alert');
+    alert.header = header;
+    alert.message = message;
+    alert.buttons = [
+      { text: '取消', role: 'cancel' },
+      { text: okText || '確認', handler: () => resolve(true) }
+    ];
+    document.body.appendChild(alert);
+    alert.onDidDismiss().then(() => resolve(false));
+    alert.present();
+  });
+}
+
+// --- 5.3 事件委派：卡片列表只用一個監聽器處理所有按鈕（Lesson 5） ---
+function bindCardEvents(containerId) {
+  const container = document.getElementById(containerId);
+  container.addEventListener('click', async (event) => {
+    const btn = event.target.closest('[data-action]');
+    if (!btn) return;
+
+    const action = btn.getAttribute('data-action');
+    const id     = btn.getAttribute('data-id');
+    const item   = store.getById(id);
+    if (!item) return;
+
+    if (action === 'fav') {
+      const nowFav = item.toggleFavorite();   // Class 方法
+      store.save();                            // 持久化
+      renderAll();                             // 重繪
+      showToast(nowFav ? `已收藏「${item.name}」` : `已取消收藏`, nowFav ? 'success' : 'medium');
+    }
+
+    if (action === 'edit') {
+      openForm(item);
+    }
+
+    if (action === 'del') {
+      const ok = await confirmAlert('確認刪除', `確定要刪除「${item.name}」嗎？\n刪除咗之後無法復原。`, '確認刪除');
+      if (!ok) return;
+      store.remove(id);
+      if (ui.pickId === id) ui.pickId = null;
+      renderAll();
+      showToast('已刪除', 'medium');
+    }
+  });
+}
+
+// --- 5.4 搜尋（Lesson 2：Ionic 元件要用專屬事件讀值） ---
+document.getElementById('searchbar').addEventListener('ionInput', (event) => {
+  ui.keyword = (event.detail && event.detail.value) || event.target.value || '';
+  renderExplore();
+});
+
+// --- 5.5 篩選 chips：類別 + 排序 ---
+function buildChipRow(containerId, options, current, onPick) {
+  const box = document.getElementById(containerId);
+  box.innerHTML = options.map(o => `
+    <button class="f-chip ${o.id === current ? 'active' : ''}" data-chip="${o.id}">${o.name}</button>
+  `).join('');
+  box.onclick = (e) => {
+    const chip = e.target.closest('[data-chip]');
+    if (!chip) return;
+    onPick(chip.getAttribute('data-chip'));
+  };
+}
+
+function refreshExploreFilters() {
+  buildChipRow('cat-chips',
+    [{ id: 'all', name: '全部' }, ...CATEGORIES.map(c => ({ id: c.id, name: c.name }))],
+    ui.category,
+    (val) => { ui.category = val; renderExplore(); refreshExploreFilters(); }
+  );
+  buildChipRow('sort-chips', SORT_OPTIONS, ui.sort,
+    (val) => { ui.sort = val; renderExplore(); refreshExploreFilters(); }
+  );
+}
+
+// --- 5.6 「今日食乜好？」隨機推介 ---
+document.getElementById('btn-random').addEventListener('click', () => {
+  const list = getFiltered();
+  if (!list.length) { showToast('而家冇嘢可以推介', 'warning'); return; }
+  const pick = list[Math.floor(Math.random() * list.length)];
+  ui.pickId = pick.id;
+  renderExplore();
+  document.querySelector('.pick-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast(`今日食「${pick.name}」啦！`, 'success');
+});
+
+/* --- 5.7 公開 API 加分項：TheMealDB（附載入中 + 錯誤處理 + 重試） --- */
+const API_URL = 'https://www.themealdb.com/api/json/v1/1/random.php';
+
+async function fetchInspiration() {
+  const box    = document.getElementById('api-body');
+  const button = document.getElementById('btn-api');
+
+  box.innerHTML = `<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;opacity:.7">
+      <ion-spinner name="dots"></ion-spinner> 載入中…</div>`;
+  button.disabled = true;
+
+  try {
+    // 逾時保護：8 秒內冇回應就當作失敗
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+
+    const res = await fetch(API_URL, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+    const meal = data.meals && data.meals[0];
+    if (!meal) throw new Error('API 回傳格式唔啱');
+
+    box.innerHTML = `
+      <div class="api-meal">
+        ${meal.strMealThumb
+          ? `<img src="${escapeHTML(meal.strMealThumb)}" alt="${escapeHTML(meal.strMeal)}" referrerpolicy="no-referrer">`
+          : ''}
+        <div style="min-width:0">
+          <div class="nm">${escapeHTML(meal.strMeal)}</div>
+          <div class="ds">${escapeHTML(meal.strCategory || '菜式')} · ${escapeHTML(meal.strArea || '各地')}</div>
+        </div>
+      </div>`;
+
+    // 圖片載入失敗時唔好留一個「破圖」icon 喺度
+    const img = box.querySelector('img');
+    if (img) img.addEventListener('error', () => { img.remove(); });
+  } catch (err) {
+    // 網絡不穩／離線／被擋：都要有friendly 回饋，唔可以白屏
+    box.innerHTML = `
+      <div class="api-error">
+        <ion-icon name="cloud-offline" style="vertical-align:-3px"></ion-icon>
+        載入失敗：${escapeHTML(err.message)}<br>
+        請檢查有冇駁上互聯網，再撳「抽一餐」重試。
+      </div>`;
+  } finally {
+    button.disabled = false;
+  }
+}
+document.getElementById('btn-api').addEventListener('click', fetchInspiration);
+
+/* ---------------------------------------------------------------------------
+   【區塊 6】表單：新增 / 編輯（Lesson 4 modal + Lesson 6 驗證）
+   --------------------------------------------------------------------------- */
+const modal = document.getElementById('form-modal');
+
+// 表單暫存值
+let formState = { id: null, category: 'street', district: '中環', price: 2, rating: 4 };
+
+// 6.1 表單 chips（類別 / 分區 / 價錢）
+function buildFormChips() {
+  document.getElementById('f-cats').innerHTML = CATEGORIES.map(c => `
+    <button class="f-chip" data-pick="category" data-val="${c.id}">${c.name}</button>`).join('');
+
+  document.getElementById('f-dists').innerHTML = DISTRICTS.map(d => `
+    <button class="f-chip" data-pick="district" data-val="${d}">${d}</button>`).join('');
+
+  document.getElementById('f-prices').innerHTML = Object.keys(PRICES).map(p => `
+    <button class="f-chip" data-pick="price" data-val="${p}">${PRICES[p].label} ${PRICES[p].desc}</button>`).join('');
+
+  document.querySelectorAll('[data-pick]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const key  = chip.getAttribute('data-pick');
+      const val  = key === 'price' ? Number(chip.getAttribute('data-val')) : chip.getAttribute('data-val');
+      formState[key] = val;
+      highlightFormChips();
+      // 揀咗類別／分區就即刻清走錯誤提示，即時回饋
+      if (key === 'category') setError('e-cat', '');
+      if (key === 'district') setError('e-dist', '');
+    });
+  });
+}
+
+function highlightFormChips() {
+  document.querySelectorAll('[data-pick]').forEach(chip => {
+    const key = chip.getAttribute('data-pick');
+    const val = key === 'price' ? Number(chip.getAttribute('data-val')) : chip.getAttribute('data-val');
+    chip.classList.toggle('active', formState[key] === val);
+  });
+}
+
+// 6.2 星星選擇器
+function buildStarPicker() {
+  const box = document.getElementById('f-stars');
+  box.innerHTML = [1, 2, 3, 4, 5].map(i => {
+    const on = i <= formState.rating;
+    return `<ion-icon class="${on ? 'on' : ''}" name="${on ? 'star' : 'star-outline'}" data-star="${i}"></ion-icon>`;
+  }).join('');
+  box.querySelectorAll('[data-star]').forEach(star => {
+    star.addEventListener('click', () => {
+      formState.rating = Number(star.getAttribute('data-star'));
+      buildStarPicker();
+    });
+  });
+}
+
+// 6.3 行內錯誤提示（Lesson 6 方式一：唔打斷用戶操作）
+function setError(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+}
+
+// 6.4 完整驗證：空白 / 長度 / 數字範圍
+function validateForm() {
+  let ok = true;
+  const name = document.getElementById('f-name').value.trim();
+  const note = document.getElementById('f-note').value.trim();
+  const tagsRaw = document.getElementById('f-tags').value.trim();
+  const date = document.getElementById('f-date').value;
+
+  // 名稱：不能空白 + 至少 2 個字 + 最多 30 個字
+  if (name === '')            { setError('e-name', '小食名稱不能空白'); ok = false; }
+  else if (name.length < 2)   { setError('e-name', '名稱最少要有 2 個字'); ok = false; }
+  else if (name.length > 30)  { setError('e-name', '名稱最多 30 個字'); ok = false; }
+  else                        { setError('e-name', ''); }
+
+  // 類別 / 分區
+  if (!formState.category) { setError('e-cat', '請選擇一個類別'); ok = false; }  else setError('e-cat', '');
+  if (!formState.district) { setError('e-dist', '請選擇所屬分區'); ok = false; } else setError('e-dist', '');
+
+  // 評分：數字範圍 1–5
+  const r = Number(formState.rating);
+  if (isNaN(r) || r < 1 || r > 5) { setError('e-rating', '評分必須係 1 至 5 之間'); ok = false; } else setError('e-rating', '');
+
+  // 備註：長度限制
+  if (note.length > 120) { setError('e-note', '食後感最多 120 個字'); ok = false; } else setError('e-note', '');
+
+  // 標籤：格式檢查（Lesson 6 Regex）
+  if (tagsRaw && tagsRaw.split(',').filter(t => t.trim()).length > 5) {
+    setError('e-note', '標籤最多 5 個'); ok = false;
+  }
+
+  // 日期：格式 + 真實性檢查
+  const dateOK = /^\d{4}-\d{2}-\d{2}$/.test(date || '') && !isNaN(new Date(date).getTime());
+  if (!dateOK) { setError('e-date', '日期格式不正確'); ok = false; } else setError('e-date', '');
+
+  return ok;
+}
+
+// 6.5 開啟表單（新增或編輯）
+function openForm(item) {
+  formState = item
+    ? { id: item.id, category: item.category, district: item.district, price: item.price, rating: item.rating }
+    : { id: null, category: 'street', district: '中環', price: 2, rating: 4 };
+
+  document.getElementById('modal-title').textContent = item ? '編輯小食' : '新增小食';
+  document.getElementById('f-name').value  = item ? item.name : '';
+  document.getElementById('f-note').value  = item ? item.note : '';
+  document.getElementById('f-tags').value  = item ? item.tags.join(', ') : '';
+  document.getElementById('f-date').value  = item ? item.date : new Date().toISOString().slice(0, 10);
+
+  ['e-name','e-cat','e-dist','e-rating','e-note','e-date'].forEach(id => setError(id, ''));
+
+  highlightFormChips();
+  buildStarPicker();
+  modal.present();
+}
+
+document.getElementById('btn-add').addEventListener('click', () => openForm(null));
+document.getElementById('btn-close').addEventListener('click', () => modal.dismiss());
+
+// 6.6 儲存：驗證 → 收集 → 寫入 → 儲存 → 重繪 → 提示
+document.getElementById('btn-save').addEventListener('click', async () => {
+  if (!validateForm()) {
+    // 送出時統一提示一次（Lesson 6 方式二：ion-alert）
+    const alert = document.createElement('ion-alert');
+    alert.header = '未能儲存';
+    alert.message = '請先修正下面標紅嘅欄位：\n• 名稱最少 2 個字\n• 要揀類別、分區同評分\n• 標籤最多 5 個、日期格式要正確';
+    alert.buttons = ['明白，唔急住'];
+    document.body.appendChild(alert);
+    await alert.present();
+    return;
+  }
+
+  const data = {
+    name:     document.getElementById('f-name').value.trim(),
+    category: formState.category,
+    district: formState.district,
+    price:    formState.price,
+    rating:   Number(formState.rating),
+    tags:     document.getElementById('f-tags').value.split(',').map(t => t.trim()).filter(Boolean).slice(0, 5),
+    note:     document.getElementById('f-note').value.trim(),
+    date:     document.getElementById('f-date').value
+  };
+
+  if (formState.id) {
+    store.update(formState.id, data);
+    showToast('已更新資料', 'success');
+  } else {
+    store.add(data);
+    showToast('已新增小食！', 'success');
+  }
+
+  ui.pickId = null;
+  renderAll();
+  refreshExploreFilters();
+  modal.dismiss();
+});
+
+/* ---------------------------------------------------------------------------
+   【區塊 7】設定頁：深色模式 / 匯出 / 還原 / 清空
+   --------------------------------------------------------------------------- */
+
+// 深色模式（Lesson 2：toggle → if/else → classList.add/remove）
+const darkToggle = document.getElementById('toggle-dark');
+function applyDark(isDark) {
+  document.body.classList.toggle('dark-theme', isDark);
+  darkToggle.checked = isDark;
+  try { localStorage.setItem(DARK_KEY, isDark ? '1' : '0'); } catch (e) {}
+}
+darkToggle.addEventListener('ionChange', (event) => {
+  applyDark(event.detail.checked);
+  showToast(event.detail.checked ? '已切換深色模式' : '已切換淺色模式', 'medium');
+});
+
+// 重新整理後記住用戶嘅選擇
+try {
+  if (localStorage.getItem(DARK_KEY) === '1') applyDark(true);
+} catch (e) {}
+
+// 匯出 JSON（用 Blob 觸發下載）
+document.getElementById('btn-export').addEventListener('click', () => {
+  const data = JSON.stringify(store.items.map(i => i.toJSON()), null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = 'snackmap-data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('已匯出 JSON 檔', 'success');
+});
+
+// 載入示範資料
+document.getElementById('btn-restore').addEventListener('click', async () => {
+  const ok = await confirmAlert('載入示範資料', '會用 10 間示範小食覆蓋現有資料，繼續？', '載入');
+  if (!ok) return;
+  store.restoreSeed();
+  ui.pickId = null;
+  renderAll();
+  refreshExploreFilters();
+  showToast('已載入示範資料', 'success');
+});
+
+// 清空全部資料（危險操作 → 一定要二次確認）
+document.getElementById('btn-clear').addEventListener('click', async () => {
+  if (!store.items.length) { showToast('本身已經冇資料', 'warning'); return; }
+  const ok = await confirmAlert('清空所有資料',
+    `即將刪除全部 ${store.items.length} 間小食嘅紀錄。\n呢個操作無法復原，確定繼續？`, '全部刪除');
+  if (!ok) return;
+  store.clear();
+  ui.pickId = null;
+  renderAll();
+  refreshExploreFilters();
+  showToast('已清空所有資料', 'medium');
+});
+
+/* ---------------------------------------------------------------------------
+   【區塊 8】啟動
+   --------------------------------------------------------------------------- */
+buildFormChips();
+buildStarPicker();
+refreshExploreFilters();
+bindCardEvents('explore-list');   // 事件委派：整個 App 只有 2 個列表監聽器
+bindCardEvents('fav-list');
+renderAll();                      // 開場先由 localStorage 還原畫面
+
+// 畫面準備好 → 收起載入畫面
+(function hideSplash() {
+  const splash = document.getElementById('splash');
+  if (!splash) return;
+  splash.style.opacity = '0';
+  setTimeout(() => splash.remove(), 400);
+})();
+
+// 方便同學 debug（示範時可以喺 Console 睇到）
+window.SnackMap = { store, ui, renderAll };
+</script>
+</body>
+</html>
